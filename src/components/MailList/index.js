@@ -2,36 +2,65 @@ import React from 'react';
 import './style.scss';
 import MailCredentials from '../../models/MailCredentials';
 
-let List = [];
 class MailList extends React.Component {
   constructor(props) {
     super(props)
 
     this.getData = this.getData.bind(this);
 
-    List =  this.getData();
+    this.getBearerToken();
+    this.getData();
+    this.state = { data: [] };
   }
 
-  getData= async () => {
-    var xhr = new XMLHttpRequest()
-
-    xhr.addEventListener('load', () => {
-      console.log(xhr.responseText)
-    })
-
-    //xhr.open('GET', 'https://dog.ceo/api/breeds/list/all')
-    xhr.open('POST', 'https://localhost:44368/api/MailBox/GetAllMails')
-
-    // xhr.setRequestHeader('Content-Type', 'text/plain');
-    xhr.setRequestHeader('Content-Type', 'application/json');
-
+  getData () {
     let mailCredentials = new MailCredentials();
     mailCredentials.serverAddress = "imap.gmail.com";
     mailCredentials.port = 993;
-    mailCredentials.mailAddress = "xxxxxxxxxxxxx";
-    mailCredentials.mailAddressPassword = "xxxxxxxxx";
+    mailCredentials.mailAddress = "XXXXXXXXXXXXX";
+    mailCredentials.mailAddressPassword = "XXXXXXX";
 
-    xhr.send(JSON.stringify(mailCredentials))
+
+    const token = localStorage.getItem('token');
+    return fetch('https://localhost:44368/api/MailBox/GetAllMails', {
+      method: 'POST',
+      headers:{
+        Accept: 'application/json',
+                 'Content-Type': 'application/json',
+                 'Authorization': "Bearer " + token
+         },
+         body: JSON.stringify(mailCredentials),
+    })
+        .then(res => res.json())
+        .then(
+          (result) => {
+            this.setState({ data: result });
+          },
+          (error) => {
+            //throw
+          }
+        )
+    }
+
+  getBearerToken = async() => {
+    var body = {
+      "username":"admin",
+      "password":"tempPassword"
+   }
+   
+    await fetch("https://localhost:44368/token/GetToken", {
+      method: 'post',
+      headers: {
+        'Content-Type':'application/json',
+        Accept: 'application/json'
+      },
+      body: JSON.stringify(body),
+    })
+      .then(res => res.json())
+      .then((data) => {
+        localStorage.setItem("token", data)
+      })
+      .catch(console.log)
   }
 
   render() {
@@ -49,14 +78,14 @@ class MailList extends React.Component {
          </thead>
          <tbody>
             {
-               List.map((item, i) =>
+               this.state.data.map((item, i) =>
                   
-                    <tr>
-                    <th></th>
-                    <td>{item.SenderEmailAddress}</td>
-                    <td>{item.ToEmailAddress}</td>
-                    <td>{item.Subject}</td>
-                    <td>{item.Message}</td>
+                    <tr key={i}>
+                    <th>{i}</th>
+                    <td>{item.senderEmailAddress}</td>
+                    <td>{item.toEmailAddress}</td>
+                    <td>{item.subject}</td>
+                    <td>{item.message}</td>
                 </tr>
                   
                )
